@@ -6,7 +6,11 @@ import fire from '../firebaseConfig';
 import 'firebase/storage';
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
-import { GridListTileBar } from '@material-ui/core';
+import GridListTileBar from '@material-ui/core/GridListTileBar';
+import IconButton from '@material-ui/core/IconButton';
+import DeleteIcon from '@material-ui/icons/Delete';
+
+import { makeStyles } from '@material-ui/core/styles';
 
 //import loadImage from 'blueimp-load-image';
 
@@ -14,6 +18,18 @@ import { GridListTileBar } from '@material-ui/core';
 const handleDropRejected = (...args) => console.log('reject', args);
 const storageRef = fire.storage().ref();
 //const storageRef = storage.storage().ref();
+const boxStyle = {
+    borderStyle: 'dotted',
+    padding: 10,
+    textAlign: 'center'
+}
+
+const imageListBox = {
+    borderStyle: 'solid',
+    padding: 10,
+    textAlign: 'center'    
+}
+
 export default class ImageDrop extends Component {
 
 
@@ -36,15 +52,20 @@ export default class ImageDrop extends Component {
       this.state = {
         image:null,
         coverImages:[],
+        uploadedFiles:[],
         canvasWidth:0,
         canvasHeight:0,
         preview
       }
+
    }
 
    componentDidMount(){
 
    }
+
+   
+
 
    handleDrop = (files) => {
         console.log(files.length)
@@ -63,7 +84,8 @@ export default class ImageDrop extends Component {
                 task.snapshot.ref.getDownloadURL().then((downloadURL)=>{
                     //storageRef.child('test/auto_' + file.name).getDownloadURL().then((downloadURL)=>{
                         console.log('File available at', downloadURL);
-                        this.setState(prevState => ({ coverImages: [...prevState.coverImages, downloadURL]}))
+                        this.setState(prevState => ({ coverImages: [...prevState.coverImages, downloadURL],
+                                                      uploadedFiles: [...prevState.uploadedFiles, file.name]}))
                 });
         
             });
@@ -124,28 +146,38 @@ export default class ImageDrop extends Component {
 
         
     }
-	handleDeleteClick = () => {
-        //event.preventDefault();
-        //event.stopPropagation();
-        this.setState({preview:null, file:null})
-        const file = this.state.file;
-        let deleteRef =  storageRef.child('test/' + file.name);
+
+    handleDeleteCoverImage = index => () => {
+        // storage rule
+        // request.resource == null
+
+        console.log(this.state.uploadedFiles[index]);
+        const tempFiles = [...this.state.uploadedFiles];
+        const tempUrls = [...this.state.coverImages];
+
+        console.log(tempFiles);
+        console.log(tempUrls);
+        const deleteFile = tempFiles[index];
+        let deleteRef = storageRef.child('images/' + deleteFile);
         deleteRef.delete().then(()=>{
-            
             console.log('Successfully deleted');
-            console.log(this.state.file);
+            tempFiles.splice(index, 1);
+            tempUrls.splice(index, 1);
+            console.log(tempFiles);
+            console.log(tempUrls);
+
+            this.setState({uploadedFiles:tempFiles, coverImages:tempUrls})
+
         })
         .catch((err)=>{
             console.log(err);
         })
-		//this.setState({preview:null})
-		//this.props.handleFile(this.props.name, this.props.index, null);
-	}
+    }
 
    render(){
 
-		const {coverImages} = this.state;
-        
+		const {coverImages, uploadedFiles} = this.state;
+
 		const imgStyle ={ minHight:'356px',
                         maxHeight:'496px',
                         maxWidth:'100%',
@@ -176,33 +208,47 @@ export default class ImageDrop extends Component {
             width: '100px',
             height: '100px'
         }
+
+
 		//var btnStyle ={zIndex:300}
-        let dropInner =<div>
-                        <div className={this.props.displayErrors?"image-uploader form-control is-invalid":"image-uploader"} >
-                            <div className="explain">
+        let dropInner = <div className={this.props.displayErrors?"image-uploader form-control is-invalid":"image-uploader"} >
+                            <div style={boxStyle}>
                                 <b>표지 이미지 추가</b>
                                 <p>여기에 이미지를 드래그 하거나, 클릭하고 이미지를 선택하세요.</p>
                             </div>
                         </div>
-                     </div>
+                        
                      
+                     
+        let addedImages = <div style={imageListBox}>추가된 이미지 없음</div>
         
         if (coverImages.length > 0) {
         
             
             
         
-            dropInner = <div>
-                        <div className="explain">
-                            <GridList cols={5}>
+            addedImages = <GridList cols={5}>
                             {coverImages.map((url, index)=> (
-                                <GridListTile key={index}>
-                                    <img src={url} />
+                                <GridListTile key={index} >
+                                    <img src={url}  />
+                                    <GridListTileBar
+                                        titlePosition="top"
+
+                                        classes={{
+                                            /*root: classes.titleBar,
+                                            title: classes.title,*/
+                                        }}
+                                        actionIcon={
+                                            <IconButton aria-label={`delete`} 
+                                            onClick={this.handleDeleteCoverImage(index)}                                           
+                                            >
+                                            <DeleteIcon  />
+                                            </IconButton>
+                                        }
+                                        />                                    
                                 </GridListTile>
                             ))}
                             </GridList>
-                        </div>
-                        </div>
         }
 
         /*
@@ -227,6 +273,7 @@ export default class ImageDrop extends Component {
         */
       
       return(
+          <div>
          <Dropzone className={this.props.className} onDrop={ this.handleDrop } accept="image/jpeg,image/jpg,image/tiff,image/gif,image/png" multiple={ true } onDropRejected={ handleDropRejected }  >
          
             {({getRootProps, getInputProps}) => (
@@ -237,7 +284,11 @@ export default class ImageDrop extends Component {
                 </div>
                 </section>
             )}         
-         </Dropzone>	  
+         </Dropzone>
+         <div>
+                {addedImages}
+         </div>
+         </div>	  
                 
       );
    }

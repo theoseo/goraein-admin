@@ -133,7 +133,9 @@ const useStyles = makeStyles((theme) => ({
     color: '#000',
     backgroundColor: '#fff',
   },
-  
+  boxStyle: {
+    borderStyle: 'dotted',
+  }
 
   
 }));
@@ -281,7 +283,7 @@ export default function News() {
         </div>
         </Grid>
         <Grid item xs={12}>
-          <ImageDrop />
+          <ImageDrop className={classes.boxStyle} />
         </Grid>
 
         <Grid item xs={12} sm={4} >
